@@ -46,17 +46,16 @@ function TrainerScreen() {
         </div>
 
         <div>
-          <label>
-            Speed:
-            <select
-              value={speedMs}
-              onChange={(e) => setSpeedMs(Number(e.target.value))}
-            >
-              <option value={800}>Slow</option>
-              <option value={600}>Medium</option>
-              <option value={400}>Fast</option>
-            </select>
-          </label>
+          <label htmlFor="speed-slider">Speed ({speedMs} ms):</label>
+          <input
+            id="speed-slider"
+            type="range"
+            min="400"
+            max="1200"
+            step="10"
+            value={1600 - speedMs}
+            onChange={(e) => setSpeedMs(1600 - Number(e.target.value))}
+          />
         </div>
 
         <button onClick={isRunning ? stopDrill : startDrill}>
