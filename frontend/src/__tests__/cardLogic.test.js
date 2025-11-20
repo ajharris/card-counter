@@ -1,4 +1,10 @@
-import { getHiLoValue, generateDeck, applyHiLoRunningCount } from "../domain/cardLogic";
+import {
+  getHiLoValue,
+  generateDeck,
+  applyHiLoRunningCount,
+  getTrueCount,
+  generateTrueCountScenario,
+} from "../domain/cardLogic";
 
 test("Hi-Lo values match expected mapping", () => {
   expect(getHiLoValue("2")).toBe(1);
@@ -18,4 +24,30 @@ test("Hi-Lo count over full deck sums to 0", () => {
   const deck = generateDeck();
   const total = applyHiLoRunningCount(deck);
   expect(total).toBe(0);
+});
+
+test("getTrueCount divides running count by decks remaining", () => {
+  expect(getTrueCount(8, 2)).toBe(4);
+  expect(getTrueCount(-3, 1.5)).toBeCloseTo(-2, 5);
+});
+
+test("getTrueCount validates inputs", () => {
+  expect(() => getTrueCount(5, 0)).toThrow(/decksRemaining/i);
+  expect(() => getTrueCount(5, -1)).toThrow(/decksRemaining/i);
+  expect(() => getTrueCount(5, Infinity)).toThrow(/decksRemaining/i);
+  expect(() => getTrueCount(NaN, 1)).toThrow(/runningCount/i);
+});
+
+test("generateTrueCountScenario uses provided random function for repeatability", () => {
+  const deterministicValues = [0.0, 0.95];
+  const deterministicRandom = () => {
+    const value = deterministicValues.shift();
+    return value === undefined ? 0 : value;
+  };
+  const scenario = generateTrueCountScenario(deterministicRandom);
+  expect(scenario).toEqual({ runningCount: -16, decksRemaining: 6 });
+});
+
+test("generateTrueCountScenario rejects non-function random arguments", () => {
+  expect(() => generateTrueCountScenario(42)).toThrow(/randomFn/i);
 });

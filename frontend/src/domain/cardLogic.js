@@ -3,12 +3,70 @@
 // Card ranks & suits
 const RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
 const SUITS = ["♠", "♥", "♦", "♣"];
+const TRUE_COUNT_RUNNING_COUNT_CHOICES = [
+  -16,
+  -14,
+  -12,
+  -10,
+  -8,
+  -6,
+  -4,
+  -2,
+  0,
+  2,
+  4,
+  6,
+  8,
+  10,
+  12,
+  14,
+  16,
+];
+const TRUE_COUNT_DECKS_REMAINING_CHOICES = [
+  0.5,
+  0.75,
+  1,
+  1.5,
+  2,
+  2.5,
+  3,
+  3.5,
+  4,
+  4.5,
+  5,
+  5.5,
+  6,
+];
 
 // Hi-Lo values: 2–6 = +1, 7–9 = 0, 10–A = -1
 export function getHiLoValue(rank) {
   if (["2", "3", "4", "5", "6"].includes(rank)) return 1;
   if (["7", "8", "9"].includes(rank)) return 0;
   return -1; // 10, J, Q, K, A
+}
+
+export function getTrueCount(runningCount, decksRemaining) {
+  if (!Number.isFinite(runningCount)) {
+    throw new Error("runningCount must be a finite number");
+  }
+  if (!Number.isFinite(decksRemaining) || decksRemaining <= 0) {
+    throw new Error("decksRemaining must be a finite number greater than 0");
+  }
+  return runningCount / decksRemaining;
+}
+
+function pickRandomChoice(choices, randomFn) {
+  const index = Math.floor(randomFn() * choices.length);
+  return choices[Math.min(index, choices.length - 1)];
+}
+
+export function generateTrueCountScenario(randomFn = Math.random) {
+  if (typeof randomFn !== "function") {
+    throw new Error("randomFn must be a function");
+  }
+  const runningCount = pickRandomChoice(TRUE_COUNT_RUNNING_COUNT_CHOICES, randomFn);
+  const decksRemaining = pickRandomChoice(TRUE_COUNT_DECKS_REMAINING_CHOICES, randomFn);
+  return { runningCount, decksRemaining };
 }
 
 // Generate a single standard deck
