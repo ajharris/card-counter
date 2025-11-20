@@ -4,6 +4,9 @@ import {
   applyHiLoRunningCount,
   getTrueCount,
   generateTrueCountScenario,
+  clampPenetrationPercent,
+  cardsUntilPenetration,
+  hasReachedPenetration,
 } from "../domain/cardLogic";
 
 test("Hi-Lo values match expected mapping", () => {
@@ -50,4 +53,22 @@ test("generateTrueCountScenario uses provided random function for repeatability"
 
 test("generateTrueCountScenario rejects non-function random arguments", () => {
   expect(() => generateTrueCountScenario(42)).toThrow(/randomFn/i);
+});
+
+test("clampPenetrationPercent enforces 50-95 range", () => {
+  expect(clampPenetrationPercent(30)).toBe(50);
+  expect(clampPenetrationPercent(120)).toBe(95);
+  expect(clampPenetrationPercent(80)).toBe(80);
+  expect(clampPenetrationPercent(NaN)).toBe(75);
+});
+
+test("cardsUntilPenetration computes threshold", () => {
+  expect(cardsUntilPenetration(312, 75)).toBe(Math.ceil(312 * 0.75));
+  expect(cardsUntilPenetration(0, 75)).toBe(0);
+});
+
+test("hasReachedPenetration detects shuffle point", () => {
+  expect(hasReachedPenetration(100, 312, 75)).toBe(false);
+  expect(hasReachedPenetration(250, 312, 75)).toBe(true);
+  expect(hasReachedPenetration(1, 0, 75)).toBe(true);
 });

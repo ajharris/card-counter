@@ -6,6 +6,7 @@ function TrainerScreen() {
   const [drillType, setDrillType] = useState("running-count");
   const [deckCount, setDeckCount] = useState(6);
   const [speedMs, setSpeedMs] = useState(600);
+  const [penetrationPercent, setPenetrationPercent] = useState(75);
   const [isRunning, setIsRunning] = useState(false);
 
   const startDrill = () => setIsRunning(true);
@@ -36,12 +37,26 @@ function TrainerScreen() {
               value={deckCount}
               onChange={(e) => setDeckCount(Number(e.target.value))}
             >
-              {[1, 2, 4, 6, 8].map((n) => (
+              {Array.from({ length: 8 }, (_, idx) => idx + 1).map((n) => (
                 <option key={n} value={n}>
                   {n}
                 </option>
               ))}
             </select>
+          </label>
+        </div>
+
+        <div>
+          <label>
+            Penetration ({penetrationPercent}%):
+            <input
+              type="range"
+              min="50"
+              max="95"
+              step="5"
+              value={penetrationPercent}
+              onChange={(e) => setPenetrationPercent(Number(e.target.value))}
+            />
           </label>
         </div>
 
@@ -69,6 +84,7 @@ function TrainerScreen() {
             isRunning={isRunning}
             deckCount={deckCount}
             speedMs={speedMs}
+            penetrationPercent={penetrationPercent}
           />
         ) : (
           <TrueCountDrill isRunning={isRunning} />

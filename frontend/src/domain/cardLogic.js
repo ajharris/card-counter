@@ -3,6 +3,9 @@
 // Card ranks & suits
 const RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
 const SUITS = ["♠", "♥", "♦", "♣"];
+const MIN_PENETRATION_PERCENT = 50;
+const MAX_PENETRATION_PERCENT = 95;
+const DEFAULT_PENETRATION_PERCENT = 75;
 const TRUE_COUNT_RUNNING_COUNT_CHOICES = [
   -16,
   -14,
@@ -53,6 +56,24 @@ export function getTrueCount(runningCount, decksRemaining) {
     throw new Error("decksRemaining must be a finite number greater than 0");
   }
   return runningCount / decksRemaining;
+}
+
+export function clampPenetrationPercent(percent = DEFAULT_PENETRATION_PERCENT) {
+  if (!Number.isFinite(percent)) {
+    return DEFAULT_PENETRATION_PERCENT;
+  }
+  return Math.min(Math.max(percent, MIN_PENETRATION_PERCENT), MAX_PENETRATION_PERCENT);
+}
+
+export function cardsUntilPenetration(shoeSize, penetrationPercent) {
+  if (shoeSize <= 0) return 0;
+  const normalizedPercent = clampPenetrationPercent(penetrationPercent);
+  return Math.ceil((normalizedPercent / 100) * shoeSize);
+}
+
+export function hasReachedPenetration(cardsDealt, shoeSize, penetrationPercent) {
+  if (shoeSize <= 0) return true;
+  return cardsDealt >= cardsUntilPenetration(shoeSize, penetrationPercent);
 }
 
 function pickRandomChoice(choices, randomFn) {

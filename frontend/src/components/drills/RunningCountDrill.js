@@ -1,56 +1,110 @@
-import React, { useEffect, useState, useRef } from "react";
-import { generateShoe, getHiLoValue } from "../../domain/cardLogic";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  generateShoe,
+  getHiLoValue,
+  hasReachedPenetration,
+} from "../../domain/cardLogic";
 
-function RunningCountDrill({ isRunning, deckCount, speedMs }) {
+const CHECKPOINT_INTERVAL = 10;
+
+function RunningCountDrill({ isRunning, deckCount, speedMs, penetrationPercent }) {
   const [shoe, setShoe] = useState([]);
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(-1);
+  const indexRef = useRef(-1);
   const [runningCount, setRunningCount] = useState(0);
   const [checkpointInput, setCheckpointInput] = useState("");
   const [feedback, setFeedback] = useState("");
+  const [shuffleNotice, setShuffleNotice] = useState("");
   const timerRef = useRef(null);
+  const pendingShuffleRef = useRef(false);
 
   // Initialize shoe when drill starts
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const resetCheckpointState = useCallback(() => {
+    setCheckpointInput("");
+    setFeedback("");
+  }, []);
+
+  const reshuffleShoe = useCallback(
+    (reason = "New shoe ready.") => {
+      setShoe(generateShoe(deckCount));
+      indexRef.current = -1;
+      setIndex(-1);
+      setRunningCount(0);
+      resetCheckpointState();
+      pendingShuffleRef.current = false;
+      setShuffleNotice(reason);
+    },
+    [deckCount, resetCheckpointState]
+  );
+
+  const advanceCard = useCallback(() => {
+    if (pendingShuffleRef.current) {
+      pendingShuffleRef.current = false;
+      reshuffleShoe("Penetration reached. Shuffling new shoe.");
+      return;
+    }
+
+    const nextIndex = indexRef.current + 1;
+    if (nextIndex >= shoe.length) {
+      pendingShuffleRef.current = true;
+      return;
+    }
+
+    const nextCard = shoe[nextIndex];
+    indexRef.current = nextIndex;
+    setIndex(nextIndex);
+    setRunningCount((count) => count + getHiLoValue(nextCard.rank));
+
+    const cardsDealt = nextIndex + 1;
+    if (
+      !pendingShuffleRef.current &&
+      hasReachedPenetration(cardsDealt, shoe.length, penetrationPercent)
+    ) {
+      pendingShuffleRef.current = true;
+    }
+
+    if (cardsDealt % CHECKPOINT_INTERVAL === 0) {
+      // TODO: Make checkpoint frequency configurable.
+      clearTimer();
+      setFeedback("Checkpoint reached. Enter your running count.");
+    }
+  }, [clearTimer, penetrationPercent, reshuffleShoe, shoe]);
+
+  const startDealing = useCallback(() => {
+    if (!isRunning || shoe.length === 0) return;
+    if (timerRef.current) clearTimer();
+    timerRef.current = setInterval(() => {
+      advanceCard();
+    }, speedMs);
+  }, [advanceCard, clearTimer, isRunning, shoe, speedMs]);
+
   useEffect(() => {
     if (isRunning) {
-      setShoe(generateShoe(deckCount));
-      setIndex(0);
-      setRunningCount(0);
-      setFeedback("");
+      reshuffleShoe("New shoe ready.");
     } else {
-      if (timerRef.current) clearInterval(timerRef.current);
+      clearTimer();
+      indexRef.current = -1;
+      setIndex(-1);
+      setShuffleNotice("");
     }
-  }, [isRunning, deckCount]);
-
-  // Deal cards at interval
-  useEffect(() => {
-    if (!isRunning || shoe.length === 0) return;
-
-    timerRef.current = setInterval(() => {
-      setIndex((prev) => {
-        const nextIndex = prev + 1;
-        if (nextIndex >= shoe.length) {
-          clearInterval(timerRef.current);
-          return prev;
-        }
-
-        const nextCard = shoe[nextIndex];
-        setRunningCount((count) => count + getHiLoValue(nextCard.rank));
-
-        // Simple checkpoint every 10 cards
-        if (nextIndex > 0 && nextIndex % 10 === 0) {
-          // TODO: Make checkpoint frequency configurable.
-          clearInterval(timerRef.current);
-          setFeedback("Checkpoint reached. Enter your running count.");
-        }
-
-        return nextIndex;
-      });
-    }, speedMs);
-
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      clearTimer();
     };
-  }, [isRunning, shoe, speedMs]);
+  }, [clearTimer, isRunning, reshuffleShoe]);
+
+  useEffect(() => {
+    startDealing();
+    return () => {
+      clearTimer();
+    };
+  }, [clearTimer, startDealing]);
 
   const currentCard = shoe[index] || null;
 
@@ -68,20 +122,7 @@ function RunningCountDrill({ isRunning, deckCount, speedMs }) {
     setCheckpointInput("");
 
     // Resume dealing
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setIndex((prev) => {
-        const nextIndex = prev + 1;
-        if (nextIndex >= shoe.length) {
-          clearInterval(timerRef.current);
-          return prev;
-        }
-
-        const nextCard = shoe[nextIndex];
-        setRunningCount((count) => count + getHiLoValue(nextCard.rank));
-        return nextIndex;
-      });
-    }, speedMs);
+    startDealing();
   };
 
   return (
@@ -99,6 +140,7 @@ function RunningCountDrill({ isRunning, deckCount, speedMs }) {
       {/* In V1 we do not show runningCount; this stays hidden intentionally. */}
       {/* TODO: Add optional "show running count" for learning mode vs test mode. */}
 
+      {shuffleNotice && <p>{shuffleNotice}</p>}
       {feedback && <p>{feedback}</p>}
 
       {feedback.startsWith("Checkpoint") && (
