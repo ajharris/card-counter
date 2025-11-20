@@ -1,17 +1,41 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import { getTrueCount, generateTrueCountScenario } from "../../domain/cardLogic";
 
-// TODO: Use real random scenarios and track accuracy, response time.
+// TODO: Track accuracy, response time, and ramp difficulty dynamically.
 
 function TrueCountDrill({ isRunning }) {
-  const [runningCount] = useState(8);
-  const [decksRemaining] = useState(2.0);
+  const [scenario, setScenario] = useState({ runningCount: 0, decksRemaining: 1 });
   const [input, setInput] = useState("");
   const [feedback, setFeedback] = useState("");
+  const [awaitingNext, setAwaitingNext] = useState(false);
 
-  const correctTrueCount = runningCount / decksRemaining;
+  const setupScenario = useCallback(() => {
+    setScenario(generateTrueCountScenario());
+    setInput("");
+    setFeedback("");
+    setAwaitingNext(false);
+  }, []);
+
+  useEffect(() => {
+    if (isRunning) {
+      setupScenario();
+    } else {
+      setInput("");
+      setFeedback("");
+      setAwaitingNext(false);
+    }
+  }, [isRunning, setupScenario]);
+
+  if (!isRunning) {
+    return <p>Start the drill to begin true count practice.</p>;
+  }
+
+  const { runningCount, decksRemaining } = scenario;
+  const correctTrueCount = getTrueCount(runningCount, decksRemaining);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (awaitingNext) return;
     const userVal = Number(input);
     const diff = Math.abs(userVal - correctTrueCount);
     setFeedback(
@@ -19,11 +43,8 @@ function TrueCountDrill({ isRunning }) {
         2
       )} (error: ${diff.toFixed(2)}).`
     );
+    setAwaitingNext(true);
   };
-
-  if (!isRunning) {
-    return <p>Start the drill to begin true count practice.</p>;
-  }
 
   return (
     <div>
@@ -39,13 +60,23 @@ function TrueCountDrill({ isRunning }) {
             step="0.5"
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            disabled={awaitingNext}
             required
           />
         </label>
-        <button type="submit">Submit</button>
+        <button type="submit" disabled={awaitingNext}>
+          Submit
+        </button>
       </form>
 
-      {feedback && <p>{feedback}</p>}
+      {feedback && (
+        <>
+          <p>{feedback}</p>
+          <button type="button" onClick={setupScenario}>
+            Next scenario
+          </button>
+        </>
+      )}
     </div>
   );
 }
