@@ -1,6 +1,7 @@
 import {
   getHiLoValue,
   generateDeck,
+  generateShoe,
   applyHiLoRunningCount,
   getTrueCount,
   generateTrueCountScenario,
@@ -21,6 +22,11 @@ test("Hi-Lo values match expected mapping", () => {
 test("single deck has 52 cards", () => {
   const deck = generateDeck();
   expect(deck).toHaveLength(52);
+});
+
+test("generateShoe multiplies deck size", () => {
+  const shoe = generateShoe(3);
+  expect(shoe).toHaveLength(3 * 52);
 });
 
 test("Hi-Lo count over full deck sums to 0", () => {

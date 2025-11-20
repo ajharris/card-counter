@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import RunningCountDrill from "./drills/RunningCountDrill";
 import TrueCountDrill from "./drills/TrueCountDrill";
+import FlashcardDrill from "./drills/FlashcardDrill";
 
 function TrainerScreen() {
   const [drillType, setDrillType] = useState("running-count");
@@ -26,6 +27,7 @@ function TrainerScreen() {
             >
               <option value="running-count">Running Count</option>
               <option value="true-count">True Count</option>
+              <option value="flashcard">Flashcard Mode</option>
             </select>
           </label>
         </div>
@@ -79,15 +81,17 @@ function TrainerScreen() {
       </section>
 
       <section>
-        {drillType === "running-count" ? (
+        {drillType === "running-count" && (
           <RunningCountDrill
             isRunning={isRunning}
             deckCount={deckCount}
             speedMs={speedMs}
             penetrationPercent={penetrationPercent}
           />
-        ) : (
-          <TrueCountDrill isRunning={isRunning} />
+        )}
+        {drillType === "true-count" && <TrueCountDrill isRunning={isRunning} />}
+        {drillType === "flashcard" && (
+          <FlashcardDrill isRunning={isRunning} speedMs={speedMs} deckCount={deckCount} />
         )}
       </section>
     </div>
